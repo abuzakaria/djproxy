@@ -1,24 +1,20 @@
 """HTTP Reverse Proxy class based generic view."""
-from django import get_version as get_django_version
-from django.http import HttpResponse
-from django.views.generic import View
+
+
+from pyramid.response import Response
 from requests import request
-from six.moves.urllib.parse import urljoin
-from six import iteritems
 
 from .headers import HeaderDict
 from .proxy_middleware import MiddlewareSet
 from .request import DownstreamRequest
 
+from urllib.parse import urlparse
 
-class HttpProxy(View):
+class HttpProxy(object):
     """Reverse HTTP Proxy class-based generic view."""
 
-    base_url = None
-    ignored_upstream_headers = [
-        'Content-Length', 'Content-Encoding', 'Keep-Alive', 'Connection',
-        'Transfer-Encoding', 'Host', 'Expect', 'Upgrade']
-    ignored_request_headers = [
+    proxy_url = None
+    ignored_headers = [
         'Content-Length', 'Content-Encoding', 'Keep-Alive', 'Connection',
         'Transfer-Encoding', 'Host', 'Expect', 'Upgrade']
     proxy_middleware = [
@@ -28,24 +24,20 @@ class HttpProxy(View):
         'djproxy.proxy_middleware.ProxyPassReverse'
     ]
     pass_query_string = True
-    reverse_urls = []
     verify_ssl = True
     cert = None
     timeout = None
 
-    @property
-    def proxy_url(self):
+    def __init__(self, url):
         """Return URL to the resource to proxy."""
-        return urljoin(self.base_url, self.kwargs.get('url', ''))
+        self.proxy_url = url
+        self.hostname = urlparse(url).hostname
+
 
     def _verify_config(self):
-        assert self.base_url, 'base_url must be set to generate a proxy url'
+        assert self.proxy_url, 'base_url must be set to generate a proxy url'
 
-        for rule in self.reverse_urls:
-            assert len(rule) == 2, 'reverse_urls must be 2 string iterables'
-
-        iter(self.ignored_upstream_headers)
-        iter(self.ignored_request_headers)
+        iter(self.ignored_headers)
         iter(self.proxy_middleware)
 
     def dispatch(self, request, *args, **kwargs):
@@ -60,15 +52,12 @@ class HttpProxy(View):
 
         return self.proxy()
 
+
     def proxy(self):
         """Retrieve the upstream content and build an HttpResponse."""
-        headers = self.request.headers.filter(self.ignored_request_headers)
+        headers = self.request.headers
+        headers.environ['HTTP_HOST'] = self.hostname
         qs = self.request.query_string if self.pass_query_string else ''
-
-        # Fix for django 1.10.0 bug https://code.djangoproject.com/ticket/27005
-        if (self.request.META.get('CONTENT_LENGTH', None) == '' and
-                get_django_version() == '1.10'):
-            del self.request.META['CONTENT_LENGTH']
 
         request_kwargs = self.middleware.process_request(
             self, self.request, method=self.request.method, url=self.proxy_url,
@@ -78,13 +67,11 @@ class HttpProxy(View):
 
         result = request(**request_kwargs)
 
-        response = HttpResponse(result.content, status=result.status_code)
+        response = Response(result.content, status=result.status_code)
 
         # Attach forwardable headers to response
         forwardable_headers = HeaderDict(result.headers).filter(
-            self.ignored_upstream_headers)
-        for header, value in iteritems(forwardable_headers):
-            response[header] = value
-
+            self.ignored_headers)
+        response._headerlist__set(forwardable_headers)
         return self.middleware.process_response(
             self, self.request, result, response)

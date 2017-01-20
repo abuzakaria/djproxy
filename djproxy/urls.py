@@ -1,6 +1,5 @@
 import re
 
-from django.conf.urls import url
 from six import iteritems
 
 from djproxy.views import HttpProxy

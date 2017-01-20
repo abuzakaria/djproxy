@@ -122,14 +122,9 @@ class ProxyPassReverse(object):
     location_headers = ['URI', 'Location', 'Content-Location']
 
     def process_response(self, proxy, request, upstream_response, response):
-        for replacement, pattern in proxy.reverse_urls:
-            pattern = r'^%s' % re.escape(pattern)
-            replacement = request.build_absolute_uri(replacement)
-
-            for loc in self.location_headers:
-                if not response.has_header(loc):
-                    continue
-
-                response[loc] = re.sub(pattern, replacement, response[loc])
+        response.headerlist = list(filter(lambda x: x[0] not in self.location_headers,
+                                          response.headerlist))
+        for location_header in self.location_headers:
+            response.headerlist.append((location_header, request.url))
 
         return response

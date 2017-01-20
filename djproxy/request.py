@@ -23,7 +23,7 @@ class DownstreamRequest(object):
     @property
     def query_string(self):
         """Request query string."""
-        return self._request.META['QUERY_STRING']
+        return self._request.query_string
 
     @property
     def x_forwarded_for(self):
@@ -33,7 +33,7 @@ class DownstreamRequest(object):
         in the forwarding change.
 
         """
-        ip = self._request.META.get('REMOTE_ADDR')
+        ip = self._request.remote_addr
         current_xff = self.headers.get('X-Forwarded-For')
 
         return '%s, %s' % (current_xff, ip) if current_xff else ip
@@ -44,3 +44,9 @@ class DownstreamRequest(object):
             return self.__getattribute__(name)
         except AttributeError:
             return getattr(self._request, name)
+
+    def get_host(self):
+        return self._request.host
+
+    def is_secure(self):
+        return self._request.scheme == 'https'
