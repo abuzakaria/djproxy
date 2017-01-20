@@ -43,14 +43,14 @@ Start by defining a new proxy:
 
 .. code:: python
 
-@view_config(route_name='proxy', renderer='proxy_iframe.jinja2')
-def proxy(request):
-    url = 'http://bugs.python.org'
-    proxy_view = HttpProxy(url)
-    response = proxy_view.dispatch(request)
-    return {
-        'content': response.text
-    }
+    @view_config(route_name='proxy', renderer='proxy_iframe.jinja2')
+    def proxy(request):
+        url = 'http://bugs.python.org'
+        proxy_view = HttpProxy(url)
+        response = proxy_view.dispatch(request)
+        return {
+            'content': response.text
+        }
 
 
 Add a route:
@@ -67,5 +67,5 @@ In proxy_iframe.jinja2 :
 
 ::
 
-{{ content|safe }}
+    {{ content|safe }}
 
