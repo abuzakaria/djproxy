@@ -10,7 +10,7 @@ If an application depends on a proxy (to get around Same Origin Policy
 issues in JavaScript, perhaps), djproxy can be used to provide that
 functionality in a web server agnostic way. This allows developers to
 keep local development environments for proxy dependent applications
-fully functional without needing to run anything other than the django
+fully functional without needing to run anything other than the pyramid
 development server.
 
 djproxy is also suitable for use in production environments and has been
@@ -20,10 +20,6 @@ one needs to use this in production, it should be fine as long as
 upstream responses aren't large. Performance can be further increased by
 aggressively caching upstream responses.
 
-Note that djproxy doesn't currently support websockets because django
-doesn't support them. I will investigate adding websocket support as
-soon as django has it.
-
 Installation
 ------------
 
@@ -31,10 +27,7 @@ Installation
 
     pip install djproxy
 
-djproxy requires requests >= 1.0.0, django >= 1.4.0 and python >= 2.6.
 
-It's currently tested against Django 1.4.x, 1.5.x, 1.6.x, 1.7.x, 1.9.x, and
-1.10.x.
 
 Usage
 -----
